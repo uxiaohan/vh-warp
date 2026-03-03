@@ -1,7 +1,6 @@
 # vh-warp
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-轻量级 Docker 镜像封装 Cloudflare WARP，快速搭建局域网可访问的代理服务，极简部署、稳定可靠。
+🥝 轻量级 Docker 镜像封装 Cloudflare WARP，快速搭建局域网可访问的代理服务，极简部署、极致性能、极其稳定。
 
 ## 特性
 - 🚀 一键部署：Docker 化封装，无需复杂配置，快速启动 WARP 代理
@@ -16,14 +15,16 @@
 ## 快速开始
 
 ### 构建镜像
-```bash
+
+```sh
 git clone https://github.com/uxiaohan/vh-warp.git
 cd vh-warp
 docker buildx build --no-cache -t vh-warp:latest .
 ```
 
 ### 启动容器
-```
+
+```sh
 docker run -d \
   --name vh-warp \
   --cap-add=NET_ADMIN \
@@ -36,6 +37,36 @@ docker run -d \
   --sysctl net.ipv4.ip_forward=1 \
   uxiaohan/vh-warp:latest
 ```
+
+### 更换自己的 WARP 账号
+
+```sh
+# 断开连接
+warp-cli --accept-tos disconnect
+# 删除原有账号
+warp-cli --accept-tos registration delete
+# 新建账号
+# warp-cli --accept-tos registration new
+# 可直接Token登录
+# 获取Token：https://uxiaohan.cloudflareaccess.com/warp
+warp-cli --accept-tos registration token '你的Tokken'
+# 查看登录信息
+warp-cli --accept-tos registration show
+
+# 最后重启容器即可
+```
+
+![切换账号截图](account.png)
+
+
 ### 使用代理
 
 局域网内设备配置代理地址（支持 HTTP/SOCKS5 混合代理）
+
+![使用代理截图](proxy.png)
+
+
+
+### 构建截图
+
+![树莓派4B构建截图](build.png)
