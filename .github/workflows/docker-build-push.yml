@@ -1,0 +1,58 @@
+name: Build and Push Docker Image
+
+# 触发条件：仅main分支推送代码时触发构建
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # 1. 拉取仓库最新代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 配置QEMU，支持多架构编译（amd64/arm64）
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # 3. 配置Docker Buildx，启用多架构构建能力
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 4. 登录Docker Hub（使用仓库秘钥中的凭证）
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      # 5. 生成基于北京时间的版本标签（YYYY.MM.DD_HH.mm）+ latest标签
+      - name: Generate custom tags (Beijing Time)
+        id: gen_tags
+        run: |
+          # 生成北京时间的时间戳标签（UTC+8）
+          TAG=$(date -d '+8 hour' +'%Y.%m.%d_%H.%M')
+          # 拼接镜像标签：时间戳版本 + latest版本
+          IMAGE_TAGS="${{ secrets.DOCKER_HUB_USER }}/vh-warp:${TAG},${{ secrets.DOCKER_HUB_USER }}/vh-warp:latest"
+          echo "TAGS=${IMAGE_TAGS}" >> $GITHUB_OUTPUT
+          # 打印标签信息，方便调试
+          echo "Generated tags: ${IMAGE_TAGS}"
+
+      # 6. 构建并推送多架构镜像（amd64 + arm64）
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: .                          # 构建上下文为仓库根目录
+          platforms: linux/amd64,linux/arm64  # 编译amd64（x86服务器）、arm64（软路由/树莓派）
+          push: ${{ github.event_name != 'pull_request' }}  # PR仅构建不推送，代码推送才推送
+          tags: ${{ steps.gen_tags.outputs.TAGS }}          # 使用生成的时间戳标签+latest标签
+          cache-from: type=gha                # 启用GitHub Actions缓存，加速后续构建
+          cache-to: type=gha,mode=max         # 最大化缓存，减少重复下载
