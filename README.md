@@ -70,3 +70,9 @@ warp-cli --accept-tos registration show
 ### 构建截图
 
 ![树莓派4B构建截图](build.png)
+
+
+
+### 感谢您的打赏💗
+
+![加油](better.png)
