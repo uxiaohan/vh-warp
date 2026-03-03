@@ -2,7 +2,7 @@
 FROM debian:bookworm-slim
 
 # 维护者信息
-LABEL maintainer="Han <vvhan.com>"
+LABEL maintainer="Han <www.vvhan.com>"
 
 # 单行设置环境变量
 ENV DEBIAN_FRONTEND=noninteractive GOST_VERSION=3.2.6 TZ=Asia/Shanghai
@@ -14,7 +14,7 @@ RUN apt update && apt install -y --no-install-recommends wget curl gnupg2 ca-cer
 RUN curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ bookworm main" | tee /etc/apt/sources.list.d/cloudflare-client.list && apt update && apt install -y cloudflare-warp && apt clean && rm -rf /var/lib/apt/lists/*
 
 # 安装GOST（适配多架构 + 主备节点容错，无bash函数版）
-RUN ARCH=$(dpkg --print-architecture) && curl -L "https://cdn.gh-proxy.org/https://github.com/go-gost/gost/releases/download/v${GOST_VERSION}/gost_${GOST_VERSION}_linux_${ARCH}.tar.gz" | tar xz -C /usr/local/bin && chmod +x /usr/local/bin/gost
+RUN ARCH=$(dpkg --print-architecture) && curl -L "https://github.com/go-gost/gost/releases/download/v${GOST_VERSION}/gost_${GOST_VERSION}_linux_${ARCH}.tar.gz" | tar xz -C /usr/local/bin && chmod +x /usr/local/bin/gost
 
 # 创建日志目录
 RUN mkdir -p /var/log/warp-gost

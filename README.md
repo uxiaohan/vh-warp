@@ -34,7 +34,7 @@ docker run -d \
   --sysctl net.core.somaxconn=65535 \
   --sysctl net.ipv4.conf.all.src_valid_mark=1 \
   --sysctl net.ipv4.ip_forward=1 \
-  vh-warp:latest
+  uxiaohan/vh-warp:latest
 ```
 ### 使用代理
 
