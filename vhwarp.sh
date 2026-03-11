@@ -25,7 +25,7 @@ wait_for_connected() {
             return 0
         fi
         echo -n "."
-        sleep 1
+        sleep 3
         count=$((count + 1))
     done
     return 1
