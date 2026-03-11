@@ -99,8 +99,8 @@ configure_teams() {
 
     echo "正在连接 WARP..."
     warp-cli --accept-tos connect > /dev/null 2>&1
-    echo -n "等待 WARP 连接（最长60秒）..."
-    if wait_for_connected 60; then
+    echo -n "等待 WARP 连接（最长5分钟）..."
+    if wait_for_connected 318; then
         echo ""
         echo "✅ Teams 配置成功！"
         log "Teams 配置成功"
