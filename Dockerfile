@@ -28,7 +28,7 @@ RUN curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --dearmor -o /u
 
 ENV GOST_VERSION=3.2.6
 RUN ARCH=$(dpkg --print-architecture) && \
-    curl -L "https://cdn.gh-proxy.org/https://github.com/go-gost/gost/releases/download/v${GOST_VERSION}/gost_${GOST_VERSION}_linux_${ARCH}.tar.gz" | tar xz -C /usr/local/bin && \
+    curl -L "https://github.com/go-gost/gost/releases/download/v${GOST_VERSION}/gost_${GOST_VERSION}_linux_${ARCH}.tar.gz" | tar xz -C /usr/local/bin && \
     chmod +x /usr/local/bin/gost
 
 RUN mkdir -p /var/log/warp-gost
