@@ -9,6 +9,8 @@ log() {
 
 log "开始初始化..."
 
+/usr/local/bin/setup-dns.sh
+
 ln -sf /usr/local/bin/vhwarp.sh /usr/bin/vhwarp
 ln -sf /usr/local/bin/setup-dns.sh /usr/bin/setup-dns
 ln -sf /usr/local/bin/gost-setup.sh /usr/bin/gost-setup
@@ -25,8 +27,6 @@ if ! pgrep -x "dbus-daemon" > /dev/null; then
     sleep 2
     log "启动 dbus"
 fi
-
-/usr/local/bin/setup-dns.sh
 
 log "启动 warp-svc..."
 warp-svc > /var/log/warp-gost/warp-svc.log 2>&1 &
