@@ -144,13 +144,13 @@ configure_warp_plus() {
     clean_old_config
     log "开始配置 WARP+: $license_key"
 
-    warp-cli --accept-tos registration new
+    warp-cli --accept-tos registration new > /dev/null 2>&1
     sleep 2
 
     warp-cli --accept-tos registration license "$license_key"
     sleep 2
 
-    warp-cli --accept-tos connect
+    warp-cli --accept-tos connect > /dev/null 2>&1
     echo -n "等待 WARP 连接（最长3分钟）..."
     if wait_for_connected 188; then
         echo ""
