@@ -32,19 +32,19 @@ services:
   vh-warp:
     image: uxiaohan/vh-warp:latest
     container_name: vh-warp
+    restart: unless-stopped
     cap_add:
       - NET_ADMIN
       - NET_RAW
       - MKNOD
     device_cgroup_rules:
-      - 'c 10:200 rwm'
+      - "c 10:200 rwm"
     ports:
       - "16666:16666"
     sysctls:
-      - net.core.somaxconn=65535
-      - net.ipv4.conf.all.src_valid_mark=1
-      - net.ipv4.ip_forward=1
-    restart: unless-stopped
+      net.core.somaxconn: "65535"
+      net.ipv4.conf.all.src_valid_mark: "1"
+      net.ipv4.ip_forward: "1"
 ```
 
 **Docker 命令**
