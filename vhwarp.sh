@@ -53,8 +53,8 @@ configure_free_warp() {
     sleep 2
 
     warp-cli --accept-tos connect > /dev/null 2>&1
-    echo -n "等待 WARP 连接（最长30秒）..."
-    if wait_for_connected 30; then
+    echo -n "等待 WARP 连接（最长3分钟）..."
+    if wait_for_connected 188; then
         echo ""
         echo "✅ WARP 免费版配置成功！"
         log "WARP 免费版配置成功"
@@ -96,10 +96,6 @@ configure_teams() {
     echo "正在注册 Teams Token..."
     warp-cli --accept-tos registration token "$token_url" > /dev/null 2>&1
     sleep 3
-
-    echo "当前状态："
-    warp-cli --accept-tos status
-    echo ""
 
     echo "正在连接 WARP..."
     warp-cli --accept-tos connect > /dev/null 2>&1
@@ -155,8 +151,8 @@ configure_warp_plus() {
     sleep 2
 
     warp-cli --accept-tos connect
-    echo -n "等待 WARP 连接（最长30秒）..."
-    if wait_for_connected 30; then
+    echo -n "等待 WARP 连接（最长3分钟）..."
+    if wait_for_connected 188; then
         echo ""
         echo "✅ WARP+ 配置成功！"
         log "WARP+ 配置成功"
@@ -233,12 +229,12 @@ show_menu() {
     echo "       WARP 配置工具 (vhwarp)"
     echo "========================================"
     echo ""
-    echo "1) 配置 WARP 免费"
-    echo "2) 配置 Teams (Token URL)"
-    echo "3) 配置 WARP+ (License Key)"
-    echo "4) 查看当前状态"
-    echo "5) 重置注册并清理配置"
-    echo "0) 退出"
+    echo "1️⃣ 配置 WARP 免费"
+    echo "2️⃣ 配置 Teams (Token URL)"
+    echo "3️⃣ 配置 WARP+ (License Key)"
+    echo "4️⃣ 查看当前状态"
+    echo "5️⃣ 重置注册并清理配置"
+    echo "0️⃣ 退出"
     echo ""
     echo "========================================"
 }
