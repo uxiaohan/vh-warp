@@ -21,17 +21,6 @@ ln -sf /usr/local/bin/gost-setup.sh /usr/bin/gost-setup 2>/dev/null
 ln -sf /usr/local/bin/log-monitor.sh /usr/bin/log-monitor 2>/dev/null
 ln -sf /usr/local/bin/health-check.sh /usr/bin/health-check 2>/dev/null
 
-if [ ! -e /dev/net/tun ]; then
-    mkdir -p /dev/net
-    mknod /dev/net/tun c 10 200 >> "$LOG_FILE" 2>&1 || true
-fi
-if [ -c /dev/net/tun ]; then
-    chmod 600 /dev/net/tun
-    log "🔌 TUN 设备已就绪"
-else
-    log "⚠️ TUN 设备不可用，WARP 无法建立隧道，代理将暂时使用直连"
-fi
-
 if ! pgrep -x "dbus-daemon" > /dev/null 2>&1; then
     dbus-daemon --system --fork 2>/dev/null || \
     service dbus start 2>/dev/null || \
@@ -70,7 +59,7 @@ if wait_for_warp_cli "$WARP_CLI_TIMEOUT"; then
     warp_cli_available=true
     log "✅ warp-cli 已就绪"
 else
-    log "⚠️ warp-cli 未就绪，跳过自动配置，代理将暂时使用直连"
+    log "⚠️ warp-cli 未就绪，跳过自动配置，WARP Proxy 暂不可用"
 fi
 
 /usr/local/bin/gost-setup.sh start
@@ -104,27 +93,30 @@ if [ "$warp_cli_available" = true ]; then
     elif acquire_warp_lock 30; then
         if ! has_registration; then
             log "🆕 未注册，自动注册免费版..."
-            if ! warp-cli --accept-tos tunnel protocol set MASQUE >> "$LOG_FILE" 2>&1; then
-                log "⚠️ MASQUE 协议设置失败"
-            fi
             if ! warp-cli --accept-tos registration new >> "$LOG_FILE" 2>&1; then
                 log "⚠️ registration new 命令失败"
             fi
             if wait_for_registration "$WARP_REGISTRATION_TIMEOUT"; then
                 log "✅ 免费版注册完成"
             else
-                log "⚠️ 注册超时，代理将暂时使用直连，健康检测稍后重试"
+                log "⚠️ 注册超时，WARP Proxy 暂不可用，健康检测稍后重试"
             fi
         else
             log "⚡ 检测到现有 $(get_account_type) 注册"
         fi
 
         if has_registration; then
-            if ! warp-cli --accept-tos mode warp+doh >> "$LOG_FILE" 2>&1; then
-                log "⚠️ WARP 模式设置失败"
+            if ! warp-cli --accept-tos tunnel protocol set MASQUE >> "$LOG_FILE" 2>&1; then
+                log "⚠️ MASQUE 隧道协议设置失败，请检查 Teams 后台设备配置"
+            fi
+            if ! warp-cli --accept-tos proxy port 40000 >> "$LOG_FILE" 2>&1; then
+                log "⚠️ WARP Proxy 端口设置失败"
+            fi
+            if ! warp-cli --accept-tos mode proxy >> "$LOG_FILE" 2>&1; then
+                log "⚠️ WARP Proxy 模式设置失败"
             fi
             if ! connect_warp; then
-                log "⚠️ WARP 暂时无法连接，代理将使用直连，健康检测继续恢复"
+                log "⚠️ WARP 暂时无法连接，WARP Proxy 暂不可用，健康检测继续恢复"
             fi
         fi
         release_warp_lock
@@ -148,7 +140,7 @@ echo "  1) docker exec -it vh-warp bash"
 echo "  2) vhwarp"
 echo ""
 echo "  🔧 配置选项："
-echo "  1) WARP 免费版 (MASQUE)"
+echo "  1) WARP 免费版 (Proxy + MASQUE)"
 echo "  2) Teams / Zero Trust"
 echo "  3) WARP+ (License Key)"
 echo ""

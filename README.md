@@ -7,7 +7,7 @@
 ## ✨ Features
 
 - 🚀 **One-click Deploy** — Docker Compose single command startup, auto-registers free tier on first run, truly zero-config
-- 🔒 **Privacy Protection** — Cloudflare WARP encrypted tunnel, hides real IP, prevents tracking
+- 🔒 **Privacy Protection** — All proxy traffic exits through Cloudflare WARP, hiding the host IP
 - ⚡ **Network Acceleration** — WARP global edge network, lower latency, better connection experience
 - 🔄 **Dual-Protocol Proxy** — Mixed SOCKS5 + HTTP on single port 1111, auto-detects protocol
 - 👤 **Multi-Account** — WARP Free / WARP+ (License Key) / Teams (Zero Trust)
@@ -17,7 +17,7 @@
 - 🖥️ **Multi-Arch** — amd64 / arm64, works on servers, routers, and Raspberry Pi
 - 📏 **Log Control** — Auto-rotated, keeps latest 3MB, ideal for low-memory environments
 - 🩺 **Docker Health Check** — Built-in HEALTHCHECK reports proxy status; recovery is handled by the in-container watchdog
-- 🚅 **GOST Optimized** — UDP proxy, Nagle disabled, 64KB read/write buffers, TCP keepalive, tuned for router scenarios
+- 🚅 **GOST Optimized** — Nagle disabled, 64KB read/write buffers, TCP keepalive, tuned for router scenarios
 ## 🚀 Quick Start
 
 ### 🐳 Pull from Docker Hub (Recommended)
@@ -37,8 +37,6 @@ cd vh-warp
 docker compose -f docker-compose.build.yml build
 docker compose -f docker-compose.build.yml up -d
 ```
-
-> 💡 **Docker Desktop users on Mac should use [OrbStack](https://orbstack.dev/) or [Colima](https://github.com/abiosoft/colima)**. Docker Desktop does not support `/dev/net/tun`, which prevents WARP from starting.
 
 ## ⚙️ Configuration
 
@@ -74,6 +72,14 @@ docker exec -it vh-warp vhwarp
   Select [0-6]:
 ```
 
+Before enrolling a Teams / Zero Trust account, configure its WARP device profile in the Zero Trust dashboard:
+
+- **Mode switch**: Enabled
+- **Tunnel protocol**: MASQUE
+- **Service mode**: Local proxy mode
+
+GOST exposes port `1111` and forwards all client proxy traffic through Cloudflare WARP.
+
 ![proxy](proxy.png)
 
 ## 🌐 Proxy Usage
@@ -85,7 +91,7 @@ SOCKS5:  192.168.x.x:1111
 HTTP:    192.168.x.x:1111
 ```
 
-> Port 1111 is Mixed mode — same port supports both HTTP and SOCKS5, no need to differentiate protocol type on the client. UDP proxy is enabled, supporting QUIC/HTTP3, gaming, WebRTC, and more.
+> Port 1111 uses Mixed mode and supports both HTTP and SOCKS5, with all traffic forwarded to the WARP local proxy.
 
 ## 💓 Health Check & Auto-Recovery
 
@@ -100,9 +106,9 @@ The container runs a built-in self-healing daemon that continuously monitors `wa
 
 When proxy checks fail, the watchdog first verifies GOST and tries two independent WARP trace endpoints. It preserves the current registration during transient failures and soft reconnects. Before falling back, it disconnects WARP and verifies that the host's direct Internet works, then makes one final attempt with the original registration.
 
-If WARP remains unavailable for 10 minutes while direct Internet is healthy, the watchdog falls back to Free to restore service. WARP+/Teams credentials are not stored and are not automatically restored. If Free registration is temporarily unavailable, GOST remains available through the host's direct connection and registration retries use backoff. Traffic may therefore expose the host egress IP during recovery. Set `HEALTH_FALLBACK_AFTER` to adjust the fallback delay.
+If WARP remains unavailable for 10 minutes while direct Internet is healthy, the watchdog falls back to Free to restore service. WARP+/Teams credentials are not stored and are not automatically restored. If Free registration is temporarily unavailable, registration retries use backoff and the exposed proxy remains unavailable until WARP recovers. GOST never bypasses WARP to use the host egress directly. Set `HEALTH_FALLBACK_AFTER` to adjust the fallback delay.
 
-Cloudflare One Client 2026.6 and later requires outbound HTTPS access to `api.devices.cloudflare.com` for registration and settings. MASQUE also requires working UDP/HTTP3 connectivity.
+Cloudflare One Client 2026.6 and later requires outbound HTTPS access to `api.devices.cloudflare.com` for registration and settings.
 
 ## 🔔 PushDeer Notifications
 
@@ -136,16 +142,12 @@ docker exec -it vh-warp tail -f /var/log/warp-gost/health-check.log
 docker run -d \
   --name vh-warp \
   --restart=always \
-  --cap-add=NET_ADMIN \
-  --cap-add=NET_RAW \
-  --device=/dev/net/tun \
   -p 1111:1111 \
-  --sysctl net.ipv4.conf.all.src_valid_mark=1 \
   -v warp-data:/var/lib/cloudflare-warp \
   uxiaohan/vh-warp:latest
 ```
 
-> Default timezone is `Asia/Shanghai`. Override with `-e TZ=Europe/London`. After WARP connects, all DNS traffic goes through the tunnel — no extra system DNS config needed.
+> Default timezone is `Asia/Shanghai`. Override with `-e TZ=Europe/London`. Proxy-side DNS requests follow the GOST upstream through WARP; no extra system DNS configuration is needed.
 
 ## 🩺 Troubleshooting
 
@@ -184,7 +186,7 @@ docker exec -it vh-warp vhwarp
 - 🖥️ **多架构适配** — amd64 / arm64，服务器、软路由、树莓派均可运行
 - 📏 **日志可控** — 自动轮转保留最新 3MB，适合低内存环境
 - 🩺 **Docker 健康检查** — 内置 HEALTHCHECK 上报代理状态，容器内守护进程负责恢复
-- 🚅 **GOST 优化** — UDP 代理、Nagle 禁用、读写缓冲区 64KB、TCP keepalive，适配软路由场景
+- 🚅 **GOST 优化** — Nagle 禁用、读写缓冲区 64KB、TCP keepalive，适配软路由场景
 
 ## 🚀 快速开始
 
@@ -205,8 +207,6 @@ cd vh-warp
 docker compose -f docker-compose.build.yml build
 docker compose -f docker-compose.build.yml up -d
 ```
-
-> 💡 **Mac 上的 Docker Desktop 用户建议使用 [OrbStack](https://orbstack.dev/) 或 [Colima](https://github.com/abiosoft/colima)**，Docker Desktop 不支持 `/dev/net/tun`，会导致 WARP 无法正常启动。
 
 ## ⚙️ 配置
 
@@ -242,6 +242,14 @@ docker exec -it vh-warp vhwarp
   请选择 [0-6]:
 ```
 
+使用 Teams / Zero Trust 账号注册前，请先在 Zero Trust 后台配置对应的 WARP 设备配置文件：
+
+- **模式切换**：开启
+- **隧道协议**：MASQUE
+- **服务模式**：本地代理模式
+
+GOST 对外暴露 `1111` 端口，并将所有客户端代理流量通过 Cloudflare WARP 转发。
+
 ![proxy](proxy.png)
 
 ## 🌐 使用代理
@@ -253,7 +261,7 @@ SOCKS5:  192.168.x.x:1111
 HTTP:    192.168.x.x:1111
 ```
 
-> 端口 1111 为 Mixed 模式，同一端口同时支持 HTTP 和 SOCKS5，客户端无需区分协议类型。已启用 UDP 代理，支持 QUIC/HTTP3、游戏、WebRTC 等场景。
+> 端口 1111 为 Mixed 模式，同一端口同时支持 HTTP 和 SOCKS5，所有流量均转发至 WARP 本地代理。
 
 ## 💓 心跳检测与自愈
 
@@ -268,9 +276,9 @@ HTTP:    192.168.x.x:1111
 
 代理检测失败时先检查 GOST，并使用两个独立 WARP trace 端点复核。短暂异常只执行保留注册的软重连。回退前会断开 WARP 验证宿主直连网络，再使用原注册做最后一次连接尝试；宿主网络本身异常时不会删除注册。
 
-当 WARP 持续不可用 10 分钟、宿主直连正常且原注册最后重连仍失败时，系统才回退到 Free。WARP+/Teams 凭据不会保存，也不会自动恢复。Free 注册 API 暂时不可用时，GOST 保持宿主直连并使用退避策略重试；恢复期间流量可能暴露服务器真实出口 IP。可通过 `HEALTH_FALLBACK_AFTER` 调整回退时间。
+当 WARP 持续不可用 10 分钟、宿主直连正常且原注册最后重连仍失败时，系统才回退到 Free。WARP+/Teams 凭据不会保存，也不会自动恢复。Free 注册 API 暂时不可用时，系统使用退避策略重试，WARP 恢复前对外代理保持不可用。GOST 不会绕过 WARP 使用服务器直连出口。可通过 `HEALTH_FALLBACK_AFTER` 调整回退时间。
 
-Cloudflare One Client 2026.6 及更高版本注册和同步设置需要放行 `api.devices.cloudflare.com` 的出站 HTTPS；MASQUE 还要求 UDP/HTTP3 网络可用。
+Cloudflare One Client 2026.6 及更高版本注册和同步设置需要放行 `api.devices.cloudflare.com` 的出站 HTTPS。
 
 ## 🔔 PushDeer 通知
 
@@ -305,16 +313,12 @@ docker exec -it vh-warp tail -f /var/log/warp-gost/health-check.log
 docker run -d \
   --name vh-warp \
   --restart=always \
-  --cap-add=NET_ADMIN \
-  --cap-add=NET_RAW \
-  --device=/dev/net/tun \
   -p 1111:1111 \
-  --sysctl net.ipv4.conf.all.src_valid_mark=1 \
   -v warp-data:/var/lib/cloudflare-warp \
   uxiaohan/vh-warp:latest
 ```
 
-> 镜像默认时区 `Asia/Shanghai`，可通过 `-e TZ=Europe/London` 覆盖。WARP 连接后 DNS 全部走隧道，无需额外配系统 DNS。
+> 镜像默认时区 `Asia/Shanghai`，可通过 `-e TZ=Europe/London` 覆盖。客户端 DNS 请求通过 GOST 转发到 WARP 本地代理，无需额外配置系统 DNS。
 
 ## 🩺 故障排查
 

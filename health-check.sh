@@ -107,7 +107,9 @@ check_registration_api() {
 
 connect_current_registration() {
     local timeout="${1:-$WARP_CONNECT_TIMEOUT}"
-    warp-cli --accept-tos mode warp+doh >> "$LOG_FILE" 2>&1 || true
+    warp-cli --accept-tos tunnel protocol set MASQUE >> "$LOG_FILE" 2>&1 || true
+    warp-cli --accept-tos proxy port 40000 >> "$LOG_FILE" 2>&1 || true
+    warp-cli --accept-tos mode proxy >> "$LOG_FILE" 2>&1 || true
     warp-cli --accept-tos connect >> "$LOG_FILE" 2>&1 || true
     wait_for_connected "$timeout"
 }
@@ -127,7 +129,7 @@ do_soft_reconnect() {
         release_warp_lock
         return 0
     fi
-    log "⚠️ 软重连后仍不可用，断开 WARP 以保持 GOST 直连"
+    log "⚠️ 软重连后仍不可用，断开 WARP 并继续恢复；GOST 不会绕过 WARP 直连"
     warp-cli --accept-tos disconnect >> "$LOG_FILE" 2>&1 || true
     release_warp_lock
     return 1
@@ -138,7 +140,6 @@ register_free() {
         return 0
     fi
     log "🆕 创建 Free WARP 注册"
-    warp-cli --accept-tos tunnel protocol set MASQUE >> "$LOG_FILE" 2>&1 || true
     if ! warp-cli --accept-tos registration new >> "$LOG_FILE" 2>&1; then
         log "⚠️ registration new 命令失败"
     fi
@@ -169,7 +170,7 @@ fallback_to_free() {
         return 2
     fi
     if ! check_registration_api; then
-        log "🌐 WARP 注册 API 不可达，保留原注册并维持直连"
+        log "🌐 WARP 注册 API 不可达，保留原注册；WARP Proxy 暂不可用"
         release_warp_lock
         return 4
     fi
@@ -203,14 +204,14 @@ fallback_to_free() {
 
     if ! register_free; then
         echo "FREE_PENDING" > "$STATE_FILE"
-        pushdeer_send "WARP Free 注册等待中" "原账户 ${original_type} 已回退。注册 API 暂时不可用，代理当前使用服务器直连，后台将退避重试。"
+        pushdeer_send "WARP Free 注册等待中" "原账户 ${original_type} 已回退。注册 API 暂时不可用，WARP Proxy 当前不可用，后台将退避重试。"
         release_warp_lock
         return 3
     fi
 
     if connect_current_registration "$WARP_CONNECT_TIMEOUT" && check_proxy; then
         log "✅ Free WARP 回退成功"
-        pushdeer_send "WARP 已恢复为 Free" "原账户: ${original_type}\n当前账户: Free\n回退期间代理可能使用了服务器直连出口。"
+        pushdeer_send "WARP 已恢复为 Free" "原账户: ${original_type}\n当前账户: Free\n所有代理流量继续通过 WARP Proxy。"
         release_warp_lock
         return 0
     fi
@@ -239,7 +240,7 @@ retry_free_until_healthy() {
         else
             delay=900
         fi
-        log "⏳ Free 恢复等待 ${delay} 秒；GOST 保持直连可用"
+        log "⏳ Free 恢复等待 ${delay} 秒；GOST 不会绕过 WARP 直连"
         sleep "$delay"
         if ! acquire_warp_lock 5; then
             log "⏸️ 用户配置正在进行，暂缓 Free 恢复"
@@ -315,7 +316,7 @@ monitor_loop() {
                 0) reset_failures ;;
                 2) log "⏳ 基础网络异常，保留注册并重新开始观察"; reset_failures ;;
                 3) retry_free_until_healthy || true ;;
-                4) log "⏳ 注册 API 不可达，保留原注册并使用直连" ;;
+                4) log "⏳ 注册 API 不可达，保留原注册；WARP Proxy 暂不可用" ;;
                 *) log "⚠️ 本轮 Free 回退未执行，继续观察" ;;
             esac
         fi

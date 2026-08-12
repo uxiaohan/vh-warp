@@ -13,9 +13,10 @@ start_gost() {
         return 0
     fi
 
-    log "🚀 启动 GOST 代理 (mixed SOCKS5+HTTP 监听 0.0.0.0:1111)..."
+    log "🚀 启动 GOST 代理 (监听 0.0.0.0:1111)..."
 
-    gost -L "mixed://0.0.0.0:1111?udp=true&nodelay=true&backlog=4096&readTimeout=0&idleTimeout=600s&tcpKeepAlive=true&keepAlivePeriod=60&readBufferSize=66666&writeBufferSize=66666" >> "$LOG_FILE" 2>&1 &
+    gost -L "mixed://0.0.0.0:1111?udp=true&nodelay=true&backlog=4096&readTimeout=0&idleTimeout=600s&tcpKeepAlive=true&keepAlivePeriod=60&readBufferSize=66666&writeBufferSize=66666" \
+        -F "socks5://127.0.0.1:40000" >> "$LOG_FILE" 2>&1 &
 
     local i=0
     while [ $i -lt 10 ]; do

@@ -31,7 +31,7 @@ COPY --from=builder /stage/warp-cli /stage/warp-svc /stage/warp-diag /usr/bin/
 COPY --from=builder /stage/rootfs/ /
 
 RUN ldconfig && \
-    setcap cap_setuid,cap_setgid,cap_net_raw,cap_dac_read_search,cap_net_admin,cap_net_bind_service,cap_sys_ptrace+ei /usr/bin/warp-svc && \
+    setcap cap_setuid,cap_setgid,cap_dac_read_search,cap_net_bind_service,cap_sys_ptrace+ei /usr/bin/warp-svc && \
     ARCH=$(dpkg --print-architecture) && \
     curl -fsSL -o /tmp/gost.tar.gz \
     "${GITHUB_PROXY}https://github.com/go-gost/gost/releases/download/v${GOST_VERSION}/gost_${GOST_VERSION}_linux_${ARCH}.tar.gz" && \

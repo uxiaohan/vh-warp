@@ -104,9 +104,6 @@ echo "📡 协议: MASQUE"
     fi
     log "开始配置 WARP Free"
 
-    warp-cli --accept-tos tunnel protocol set MASQUE > /dev/null 2>&1
-    sleep 2
-
     warp-cli --accept-tos registration new > /dev/null 2>&1
     if ! wait_for_registration; then
         echo "❌ 注册失败"
@@ -115,7 +112,9 @@ echo "📡 协议: MASQUE"
         return 1
     fi
 
-    warp-cli --accept-tos mode warp+doh > /dev/null 2>&1
+    warp-cli --accept-tos tunnel protocol set MASQUE > /dev/null 2>&1
+    warp-cli --accept-tos proxy port 40000 > /dev/null 2>&1
+    warp-cli --accept-tos mode proxy > /dev/null 2>&1
     sleep 1
 
     warp-cli --accept-tos connect > /dev/null 2>&1
@@ -187,7 +186,9 @@ configure_teams() {
         return 1
     fi
 
-    warp-cli --accept-tos mode warp+doh > /dev/null 2>&1
+    warp-cli --accept-tos tunnel protocol set MASQUE > /dev/null 2>&1
+    warp-cli --accept-tos proxy port 40000 > /dev/null 2>&1
+    warp-cli --accept-tos mode proxy > /dev/null 2>&1
     sleep 1
 
     warp-cli --accept-tos connect > /dev/null 2>&1
@@ -265,7 +266,9 @@ configure_plus() {
         return 1
     fi
 
-    warp-cli --accept-tos mode warp+doh > /dev/null 2>&1
+    warp-cli --accept-tos tunnel protocol set MASQUE > /dev/null 2>&1
+    warp-cli --accept-tos proxy port 40000 > /dev/null 2>&1
+    warp-cli --accept-tos mode proxy > /dev/null 2>&1
     sleep 1
 
     warp-cli --accept-tos connect > /dev/null 2>&1
